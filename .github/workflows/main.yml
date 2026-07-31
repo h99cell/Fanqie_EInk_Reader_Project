@@ -16,13 +16,13 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    # 1. 彻底清理旧残留
+    # 1. 清理工作区
     - name: Clean Workspace
       run: |
         rm -rf ./*
         rm -rf ./.gradle
 
-    # 2. 重新生成项目（包含自定义应用图标）
+    # 2. 生成兼容 Android 14 (S23 Ultra) 的代码
     - name: Generate Clean Android Project
       run: |
         mkdir -p app/src/main/java/com/eink/fanqiereader
@@ -30,7 +30,6 @@ jobs:
         mkdir -p app/src/main/res/values
         mkdir -p app/src/main/res/drawable
 
-        # 补全 AndroidX 开关
         cat << 'EOF' > gradle.properties
         android.useAndroidX=true
         android.nonTransitiveRClass=true
@@ -89,7 +88,7 @@ jobs:
         }
         EOF
 
-        # 创建自定义的应用图标
+        # 生成图标
         cat << 'EOF' > app/src/main/res/drawable/ic_launcher.xml
         <vector xmlns:android="http://schemas.android.com/apk/res/android"
             android:width="108dp"
@@ -105,6 +104,17 @@ jobs:
         </vector>
         EOF
 
+        # 修复主题命名：定义单独的 AppTheme
+        cat << 'EOF' > app/src/main/res/values/styles.xml
+        <resources>
+            <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
+                <item name="android:windowNoTitle">true</item>
+                <item name="android:windowActionBar">false</item>
+                <item name="android:windowFullscreen">true</item>
+            </style>
+        </resources>
+        EOF
+
         cat << 'EOF' > app/src/main/AndroidManifest.xml
         <?xml version="1.0" encoding="utf-8"?>
         <manifest xmlns:android="http://schemas.android.com/apk/res/android">
@@ -115,11 +125,12 @@ jobs:
                 android:icon="@drawable/ic_launcher"
                 android:label="番茄迷你阅"
                 android:supportsRtl="true"
-                android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+                android:hardwareAccelerated="true"
+                android:theme="@style/AppTheme">
                 <activity
                     android:name=".MainActivity"
                     android:exported="true"
-                    android:configChanges="orientation|screenSize">
+                    android:configChanges="orientation|screenSize|keyboardHidden">
                     <intent-filter>
                         <action android:name="android.intent.action.MAIN" />
                         <category android:name="android.intent.category.LAUNCHER" />
@@ -127,16 +138,6 @@ jobs:
                 </activity>
             </application>
         </manifest>
-        EOF
-
-        cat << 'EOF' > app/src/main/res/values/styles.xml
-        <resources>
-            <style name="Theme.AppCompat.Light.NoActionBar" parent="Theme.AppCompat.Light.NoActionBar">
-                <item name="android:windowNoTitle">true</item>
-                <item name="android:windowActionBar">false</item>
-                <item name="android:windowFullscreen">true</item>
-            </style>
-        </resources>
         EOF
 
         cat << 'EOF' > app/src/main/res/layout/activity_main.xml
@@ -152,6 +153,7 @@ jobs:
         </FrameLayout>
         EOF
 
+        # 修复 MainActivity 逻辑与高版本系统兼容性
         cat << 'EOF' > app/src/main/java/com/eink/fanqiereader/MainActivity.java
         package com.eink.fanqiereader;
 
@@ -170,31 +172,35 @@ jobs:
             @Override
             protected void onCreate(Bundle savedInstanceState) {
                 super.onCreate(savedInstanceState);
-
-                getWindow().getDecorView().setSystemUiVisibility(
-                    View.SYSTEM_UI_FLAG_FULLSCREEN
-                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                    | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                );
-
                 setContentView(R.layout.activity_main);
+
+                // 安全的全屏隐藏逻辑（适配 Android 14 / One UI 6）
+                View decorView = getWindow().getDecorView();
+                if (decorView != null) {
+                    decorView.setSystemUiVisibility(
+                        View.SYSTEM_UI_FLAG_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                    );
+                }
+
                 webView = findViewById(R.id.webView);
+                if (webView != null) {
+                    WebSettings settings = webView.getSettings();
+                    settings.setJavaScriptEnabled(true);
+                    settings.setDomStorageEnabled(true);
+                    settings.setCacheMode(WebSettings.LOAD_DEFAULT);
 
-                WebSettings settings = webView.getSettings();
-                settings.setJavaScriptEnabled(true);
-                settings.setDomStorageEnabled(true);
-                settings.setDatabaseEnabled(true);
-                settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+                    webView.setWebViewClient(new WebViewClient() {
+                        @Override
+                        public void onPageFinished(WebView view, String url) {
+                            super.onPageFinished(view, url);
+                            injectEInkEngine(view);
+                        }
+                    });
 
-                webView.setWebViewClient(new WebViewClient() {
-                    @Override
-                    public void onPageFinished(WebView view, String url) {
-                        super.onPageFinished(view, url);
-                        injectEInkEngine(view);
-                    }
-                });
-
-                webView.loadUrl("https://fanqienovel.com");
+                    webView.loadUrl("https://fanqienovel.com");
+                }
             }
 
             private void injectEInkEngine(WebView view) {
