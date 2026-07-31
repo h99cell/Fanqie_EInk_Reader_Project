@@ -16,38 +16,48 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    # 使用 Linux 原生纯文本流生成项目文件（完全避开任何引号转义错误）
-    - name: Generate Android Project Files
+    # 1. 彻底清理旧残留文件
+    - name: Clean Workspace
+      run: |
+        rm -rf ./*
+        rm -rf ./.gradle
+
+    # 2. 生成现代化 Android 项目结构 (AGP 8.2.0 标准)
+    - name: Generate Clean Android Project
       run: |
         mkdir -p app/src/main/java/com/eink/fanqiereader
         mkdir -p app/src/main/res/layout
         mkdir -p app/src/main/res/values
 
         cat << 'EOF' > settings.gradle
+        pluginManagement {
+            repositories {
+                google()
+                mavenCentral()
+                gradlePluginPortal()
+            }
+        }
+        dependencyResolutionManagement {
+            repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+            repositories {
+                google()
+                mavenCentral()
+            }
+        }
         rootProject.name = "FanqieEInkReader"
         include ':app'
         EOF
 
         cat << 'EOF' > build.gradle
-        buildscript {
-            repositories {
-                google()
-                mavenCentral()
-            }
-            dependencies {
-                classpath 'com.android.tools.build:gradle:8.1.2'
-            }
-        }
-        allprojects {
-            repositories {
-                google()
-                mavenCentral()
-            }
+        plugins {
+            id 'com.android.application' version '8.2.0' apply false
         }
         EOF
 
         cat << 'EOF' > app/build.gradle
-        apply plugin: 'com.android.application'
+        plugins {
+            id 'com.android.application'
+        }
 
         android {
             namespace 'com.eink.fanqiereader'
@@ -230,12 +240,17 @@ jobs:
         }
         EOF
 
+    # 3. 严格锁定使用 Gradle 8.4 版本（解决 Gradle 9.x 兼容性爆红问题）
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
+      with:
+        gradle-version: '8.4'
 
+    # 4. 执行构建
     - name: Build APK
       run: gradle assembleDebug
 
+    # 5. 上传产物
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
