@@ -16,12 +16,14 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    # 1. 自动在云端生成完整的 Android 项目目录与全部源码（彻底避免网页上传丢失文件的问题）
+    # 1. 自动生成本地 Android SDK 路径与项目架构
     - name: Generate Complete Android Project
       run: |
         mkdir -p app/src/main/java/com/eink/fanqiereader
         mkdir -p app/src/main/res/layout
         mkdir -p app/src/main/res/values
+
+        echo "sdk.dir=$ANDROID_HOME" > local.properties
 
         cat << 'EOF' > settings.gradle
         pluginManagement {
@@ -175,34 +177,14 @@ jobs:
                     window.einkInjected = true;
 
                     var style = document.createElement('style');
-                    style.innerHTML = `
-                        * {
-                            background-color: #ffffff !important;
-                            color: #000000 !important;
-                            animation: none !important;
-                            transition: none !important;
-                            box-shadow: none !important;
-                            text-shadow: none !important;
-                        }
-                        .eink-zone-left {
-                            position: fixed; top: 0; left: 0; width: 30%; height: 100%; z-index: 9998;
-                        }
-                        .eink-zone-right {
-                            position: fixed; top: 0; right: 0; width: 30%; height: 100%; z-index: 9998;
-                        }
-                        #eink-btn {
-                            position: fixed; bottom: 15px; right: 15px; z-index: 10000;
-                            background: #000 !important; color: #fff !important;
-                            padding: 8px 14px; border-radius: 4px; font-size: 14px; font-weight: bold;
-                        }
-                        #eink-panel {
-                            display: none; position: fixed; bottom: 60px; right: 15px; z-index: 10000;
-                            background: #fff !important; border: 2px solid #000; padding: 14px;
-                            width: 230px; font-size: 13px;
-                        }
-                        #eink-panel label { display: block; margin-top: 8px; font-weight: bold; }
-                        #eink-panel input { width: 100%; margin-top: 4px; }
-                    `;
+                    style.innerHTML = '*' +
+                        '{ background-color: #ffffff !important; color: #000000 !important; animation: none !important; transition: none !important; box-shadow: none !important; text-shadow: none !important; }' +
+                        '.eink-zone-left { position: fixed; top: 0; left: 0; width: 30%; height: 100%; z-index: 9998; }' +
+                        '.eink-zone-right { position: fixed; top: 0; right: 0; width: 30%; height: 100%; z-index: 9998; }' +
+                        '#eink-btn { position: fixed; bottom: 15px; right: 15px; z-index: 10000; background: #000 !important; color: #fff !important; padding: 8px 14px; border-radius: 4px; font-size: 14px; font-weight: bold; }' +
+                        '#eink-panel { display: none; position: fixed; bottom: 60px; right: 15px; z-index: 10000; background: #fff !important; border: 2px solid #000; padding: 14px; width: 230px; font-size: 13px; }' +
+                        '#eink-panel label { display: block; margin-top: 8px; font-weight: bold; }' +
+                        '#eink-panel input { width: 100%; margin-top: 4px; }';
                     document.head.appendChild(style);
 
                     var readerStyle = document.createElement('style');
@@ -214,38 +196,23 @@ jobs:
                         var paraSpacing = localStorage.getItem('eink_ps') || '14';
                         var padding = localStorage.getItem('eink_pd') || '16';
 
-                        readerStyle.innerHTML = `
-                            article, p, .reader-content, body {
-                                font-size: \${fontSize}px !important;
-                                line-height: \${lineHeight} !important;
-                                padding-left: \${padding}px !important;
-                                padding-right: \${padding}px !important;
-                            }
-                            p {
-                                margin-bottom: \${paraSpacing}px !important;
-                            }
-                        `;
+                        readerStyle.innerHTML = 'article, p, .reader-content, body { font-size: ' + fontSize + 'px !important; line-height: ' + lineHeight + ' !important; padding-left: ' + padding + 'px !important; padding-right: ' + padding + 'px !important; } p { margin-bottom: ' + paraSpacing + 'px !important; }';
                     }
                     applySettings();
 
+                    var fsVal = localStorage.getItem('eink_fs') || 22;
+                    var lhVal = localStorage.getItem('eink_lh') || 1.6;
+                    var psVal = localStorage.getItem('eink_ps') || 14;
+                    var pdVal = localStorage.getItem('eink_pd') || 16;
+
                     var panel = document.createElement('div');
                     panel.id = 'eink-panel';
-                    panel.innerHTML = `
-                        <div style="font-weight:bold;margin-bottom:8px;border-bottom:1px solid #000;padding-bottom:4px;">墨案排版设置</div>
-                        <label>字号大小 (px)</label>
-                        <input type="range" id="eink-fs" min="14" max="38" value="\${localStorage.getItem('eink_fs')||22}">
-                        
-                        <label>行间距</label>
-                        <input type="range" id="eink-lh" min="1.0" max="2.5" step="0.1" value="\${localStorage.getItem('eink_lh')||1.6}">
-                        
-                        <label>段落间距 (px)</label>
-                        <input type="range" id="eink-ps" min="0" max="35" value="\${localStorage.getItem('eink_ps')||14}">
-                        
-                        <label>左右边距 (px)</label>
-                        <input type="range" id="eink-pd" min="0" max="40" value="\${localStorage.getItem('eink_pd')||16}">
-                        
-                        <button id="eink-close" style="margin-top:12px;width:100%;background:#000!important;color:#fff!important;padding:6px;">确定并关闭</button>
-                    `;
+                    panel.innerHTML = '<div style="font-weight:bold;margin-bottom:8px;border-bottom:1px solid #000;padding-bottom:4px;">墨案排版设置</div>' +
+                        '<label>字号大小 (px)</label><input type="range" id="eink-fs" min="14" max="38" value="' + fsVal + '">' +
+                        '<label>行间距</label><input type="range" id="eink-lh" min="1.0" max="2.5" step="0.1" value="' + lhVal + '">' +
+                        '<label>段落间距 (px)</label><input type="range" id="eink-ps" min="0" max="35" value="' + psVal + '">' +
+                        '<label>左右边距 (px)</label><input type="range" id="eink-pd" min="0" max="40" value="' + pdVal + '">' +
+                        '<button id="eink-close" style="margin-top:12px;width:100%;background:#000!important;color:#fff!important;padding:6px;">确定并关闭</button>';
                     document.body.appendChild(panel);
 
                     var btn = document.createElement('button');
@@ -280,7 +247,7 @@ jobs:
                     document.body.appendChild(rightZone);
                 })();
                 """.trimIndent()
-                
+
                 view?.evaluateJavascript(js, null)
             }
 
@@ -294,15 +261,15 @@ jobs:
         }
         EOF
 
-    # 2. 配置系统的 Gradle 环境
+    # 2. 配置 Gradle 环境
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
 
-    # 3. 开始编译 Debug 版本 APK
+    # 3. 编译 Debug APK
     - name: Build with Gradle
       run: gradle assembleDebug
 
-    # 4. 导出成品 APK 文件
+    # 4. 上传成品 APK
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
