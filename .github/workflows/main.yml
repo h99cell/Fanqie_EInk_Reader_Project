@@ -155,7 +155,7 @@ jobs:
         </FrameLayout>
         EOF
 
-        # 主程序入口（已修正热区避开顶部 60px 区域）
+        # 主程序入口（默认加载书架页面）
         cat << 'EOF' > app/src/main/java/com/eink/fanqiereader/MainActivity.java
         package com.eink.fanqiereader;
 
@@ -200,7 +200,8 @@ jobs:
                         }
                     });
 
-                    webView.loadUrl("https://fanqienovel.com");
+                    // 设置默认跳转至个人书架
+                    webView.loadUrl("https://fanqienovel.com/bookshelf?enter_from=menu");
                 }
             }
 
