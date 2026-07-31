@@ -16,21 +16,20 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    # 使用 Python 脚本在云端精准构建原生 Java Android 项目
-    - name: Generate Pure Java Android Project
+    # 使用 Linux 原生纯文本流生成项目文件（完全避开任何引号转义错误）
+    - name: Generate Android Project Files
       run: |
-        python3 -c "
-        import os
+        mkdir -p app/src/main/java/com/eink/fanqiereader
+        mkdir -p app/src/main/res/layout
+        mkdir -p app/src/main/res/values
 
-        os.makedirs('app/src/main/java/com/eink/fanqiereader', exist_ok=True)
-        os.makedirs('app/src/main/res/layout', exist_ok=True)
-        os.makedirs('app/src/main/res/values', exist_ok=True)
+        cat << 'EOF' > settings.gradle
+        rootProject.name = "FanqieEInkReader"
+        include ':app'
+        EOF
 
-        with open('settings.gradle', 'w', encoding='utf-8') as f:
-            f.write('rootProject.name = \"FanqieEInkReader\"\ninclude \':app\'\n')
-
-        with open('build.gradle', 'w', encoding='utf-8') as f:
-            f.write('''buildscript {
+        cat << 'EOF' > build.gradle
+        buildscript {
             repositories {
                 google()
                 mavenCentral()
@@ -45,21 +44,21 @@ jobs:
                 mavenCentral()
             }
         }
-        ''')
+        EOF
 
-        with open('app/build.gradle', 'w', encoding='utf-8') as f:
-            f.write('''apply plugin: 'com.android.application'
+        cat << 'EOF' > app/build.gradle
+        apply plugin: 'com.android.application'
 
         android {
             namespace 'com.eink.fanqiereader'
             compileSdk 34
 
             defaultConfig {
-                applicationId \"com.eink.fanqiereader\"
+                applicationId "com.eink.fanqiereader"
                 minSdk 21
                 targetSdk 34
                 versionCode 1
-                versionName \"1.0\"
+                versionName "1.0"
             }
 
             compileOptions {
@@ -71,56 +70,57 @@ jobs:
         dependencies {
             implementation 'androidx.appcompat:appcompat:1.6.1'
         }
-        ''')
+        EOF
 
-        with open('app/src/main/AndroidManifest.xml', 'w', encoding='utf-8') as f:
-            f.write('''<?xml version=\"1.0\" encoding=\"utf-8\"?>
-        <manifest xmlns:android=\"http://schemas.android.com/apk/res/android\">
-            <uses-permission android:name=\"android.permission.INTERNET\" />
-            <uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\" />
+        cat << 'EOF' > app/src/main/AndroidManifest.xml
+        <?xml version="1.0" encoding="utf-8"?>
+        <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+            <uses-permission android:name="android.permission.INTERNET" />
+            <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
             <application
-                android:allowBackup=\"true\"
-                android:icon=\"@android:drawable/ic_menu_book\"
-                android:label=\"番茄迷你阅\"
-                android:supportsRtl=\"true\"
-                android:theme=\"@style/Theme.AppCompat.Light.NoActionBar\">
+                android:allowBackup="true"
+                android:icon="@android:drawable/ic_menu_book"
+                android:label="番茄迷你阅"
+                android:supportsRtl="true"
+                android:theme="@style/Theme.AppCompat.Light.NoActionBar">
                 <activity
-                    android:name=\".MainActivity\"
-                    android:exported=\"true\"
-                    android:configChanges=\"orientation|screenSize\">
+                    android:name=".MainActivity"
+                    android:exported="true"
+                    android:configChanges="orientation|screenSize">
                     <intent-filter>
-                        <action android:name=\"android.intent.action.MAIN\" />
-                        <category android:name=\"android.intent.category.LAUNCHER\" />
+                        <action android:name="android.intent.action.MAIN" />
+                        <category android:name="android.intent.category.LAUNCHER" />
                     </intent-filter>
                 </activity>
             </application>
         </manifest>
-        ''')
+        EOF
 
-        with open('app/src/main/res/values/styles.xml', 'w', encoding='utf-8') as f:
-            f.write('''<resources>
-            <style name=\"Theme.AppCompat.Light.NoActionBar\" parent=\"Theme.AppCompat.Light.NoActionBar\">
-                <item name=\"android:windowNoTitle\">true</item>
-                <item name=\"android:windowActionBar\">false</item>
-                <item name=\"android:windowFullscreen\">true</item>
+        cat << 'EOF' > app/src/main/res/values/styles.xml
+        <resources>
+            <style name="Theme.AppCompat.Light.NoActionBar" parent="Theme.AppCompat.Light.NoActionBar">
+                <item name="android:windowNoTitle">true</item>
+                <item name="android:windowActionBar">false</item>
+                <item name="android:windowFullscreen">true</item>
             </style>
         </resources>
-        ''')
+        EOF
 
-        with open('app/src/main/res/layout/activity_main.xml', 'w', encoding='utf-8') as f:
-            f.write('''<?xml version=\"1.0\" encoding=\"utf-8\"?>
-        <FrameLayout xmlns:android=\"http://schemas.android.com/apk/res/android\"
-            android:layout_width=\"match_parent\"
-            android:layout_height=\"match_parent\"
-            android:background=\"#FFFFFF\">
+        cat << 'EOF' > app/src/main/res/layout/activity_main.xml
+        <?xml version="1.0" encoding="utf-8"?>
+        <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#FFFFFF">
             <WebView
-                android:id=\"@+id/webView\"
-                android:layout_width=\"match_parent\"
-                android:layout_height=\"match_parent\" />
+                android:id="@+id/webView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
         </FrameLayout>
-        ''')
+        EOF
 
-        main_java = '''package com.eink.fanqiereader;
+        cat << 'EOF' > app/src/main/java/com/eink/fanqiereader/MainActivity.java
+        package com.eink.fanqiereader;
 
         import android.annotation.SuppressLint;
         import android.os.Bundle;
@@ -133,7 +133,7 @@ jobs:
         public class MainActivity extends AppCompatActivity {
             private WebView webView;
 
-            @SuppressLint(\"SetJavaScriptEnabled\")
+            @SuppressLint("SetJavaScriptEnabled")
             @Override
             protected void onCreate(Bundle savedInstanceState) {
                 super.onCreate(savedInstanceState);
@@ -161,58 +161,58 @@ jobs:
                     }
                 });
 
-                webView.loadUrl(\"https://fanqienovel.com\");
+                webView.loadUrl("https://fanqienovel.com");
             }
 
             private void injectEInkEngine(WebView view) {
-                String js = \"(function() {\" +
-                    \"if (window.einkInjected) return;\" +
-                    \"window.einkInjected = true;\" +
-                    \"var style = document.createElement('style');\" +
-                    \"style.innerHTML = '* { background-color: #ffffff !important; color: #000000 !important; animation: none !important; transition: none !important; box-shadow: none !important; text-shadow: none !important; } .eink-zone-left { position: fixed; top: 0; left: 0; width: 30%; height: 100%; z-index: 9998; } .eink-zone-right { position: fixed; top: 0; right: 0; width: 30%; height: 100%; z-index: 9998; } #eink-btn { position: fixed; bottom: 15px; right: 15px; z-index: 10000; background: #000 !important; color: #fff !important; padding: 8px 14px; border-radius: 4px; font-size: 14px; font-weight: bold; } #eink-panel { display: none; position: fixed; bottom: 60px; right: 15px; z-index: 10000; background: #fff !important; border: 2px solid #000; padding: 14px; width: 230px; font-size: 13px; } #eink-panel label { display: block; margin-top: 8px; font-weight: bold; } #eink-panel input { width: 100%; margin-top: 4px; }';" +
-                    \"document.head.appendChild(style);\" +
-                    \"var readerStyle = document.createElement('style');\" +
-                    \"document.head.appendChild(readerStyle);\" +
-                    \"function applySettings() {\" +
-                    \"  var fontSize = localStorage.getItem('eink_fs') || '22';\" +
-                    \"  var lineHeight = localStorage.getItem('eink_lh') || '1.6';\" +
-                    \"  var paraSpacing = localStorage.getItem('eink_ps') || '14';\" +
-                    \"  var padding = localStorage.getItem('eink_pd') || '16';" +
-                    \"  readerStyle.innerHTML = 'article, p, .reader-content, body { font-size: ' + fontSize + 'px !important; line-height: ' + lineHeight + ' !important; padding-left: ' + padding + 'px !important; padding-right: ' + padding + 'px !important; } p { margin-bottom: ' + paraSpacing + 'px !important; }';\" +
-                    \"}\" +
-                    \"applySettings();\" +
-                    \"var fsVal = localStorage.getItem('eink_fs') || 22;\" +
-                    \"var lhVal = localStorage.getItem('eink_lh') || 1.6;\" +
-                    \"var psVal = localStorage.getItem('eink_ps') || 14;\" +
-                    \"var pdVal = localStorage.getItem('eink_pd') || 16;\" +
-                    \"var panel = document.createElement('div');\" +
-                    \"panel.id = 'eink-panel';\" +
-                    \"panel.innerHTML = '<div style=\"font-weight:bold;margin-bottom:8px;border-bottom:1px solid #000;padding-bottom:4px;\">墨案排版设置</div>' +\" +
-                    \"  '<label>字号大小 (px)</label><input type=\"range\" id=\"eink-fs\" min=\"14\" max=\"38\" value=\"' + fsVal + '\">' +\" +
-                    \"  '<label>行间距</label><input type=\"range\" id=\"eink-lh\" min=\"1.0\" max=\"2.5\" step=\"0.1\" value=\"' + lhVal + '\">' +\" +
-                    \"  '<label>段落间距 (px)</label><input type=\"range\" id=\"eink-ps\" min=\"0\" max=\"35\" value=\"' + psVal + '\">' +\" +
-                    \"  '<label>左右边距 (px)</label><input type=\"range\" id=\"eink-pd\" min=\"0\" max=\"40\" value=\"' + pdVal + '\">' +\" +
-                    \"  '<button id=\"eink-close\" style=\"margin-top:12px;width:100%;background:#000!important;color:#fff!important;padding:6px;\">确定并关闭</button>';\" +
-                    \"document.body.appendChild(panel);\" +
-                    \"var btn = document.createElement('button');\" +
-                    \"btn.id = 'eink-btn';\" +
-                    \"btn.innerText = '⚙ 排版';\" +
-                    \"btn.onclick = function() { panel.style.display = panel.style.display === 'block' ? 'none' : 'block'; };\" +
-                    \"document.body.appendChild(btn);\" +
-                    \"document.getElementById('eink-fs').oninput = function(e) { localStorage.setItem('eink_fs', e.target.value); applySettings(); };\" +
-                    \"document.getElementById('eink-lh').oninput = function(e) { localStorage.setItem('eink_lh', e.target.value); applySettings(); };\" +
-                    \"document.getElementById('eink-ps').oninput = function(e) { localStorage.setItem('eink_ps', e.target.value); applySettings(); };\" +
-                    \"document.getElementById('eink-pd').oninput = function(e) { localStorage.setItem('eink_pd', e.target.value); applySettings(); };\" +
-                    \"document.getElementById('eink-close').onclick = function() { panel.style.display = 'none'; };\" +
-                    \"var leftZone = document.createElement('div');\" +
-                    \"leftZone.className = 'eink-zone-left';\" +
-                    \"leftZone.onclick = function(e) { if (panel.style.display === 'block') return; window.scrollBy({ top: -window.innerHeight * 0.88, behavior: 'instant' }); };\" +
-                    \"var rightZone = document.createElement('div');\" +
-                    \"rightZone.className = 'eink-zone-right';\" +
-                    \"rightZone.onclick = function(e) { if (panel.style.display === 'block') return; window.scrollBy({ top: window.innerHeight * 0.88, behavior: 'instant' }); };\" +
-                    \"document.body.appendChild(leftZone);\" +
-                    \"document.body.appendChild(rightZone);\" +
-                    \"})();\";
+                String js = "(function() {" +
+                    "if (window.einkInjected) return;" +
+                    "window.einkInjected = true;" +
+                    "var style = document.createElement('style');" +
+                    "style.innerHTML = '* { background-color: #ffffff !important; color: #000000 !important; animation: none !important; transition: none !important; box-shadow: none !important; text-shadow: none !important; } .eink-zone-left { position: fixed; top: 0; left: 0; width: 30%; height: 100%; z-index: 9998; } .eink-zone-right { position: fixed; top: 0; right: 0; width: 30%; height: 100%; z-index: 9998; } #eink-btn { position: fixed; bottom: 15px; right: 15px; z-index: 10000; background: #000 !important; color: #fff !important; padding: 8px 14px; border-radius: 4px; font-size: 14px; font-weight: bold; } #eink-panel { display: none; position: fixed; bottom: 60px; right: 15px; z-index: 10000; background: #fff !important; border: 2px solid #000; padding: 14px; width: 230px; font-size: 13px; } #eink-panel label { display: block; margin-top: 8px; font-weight: bold; } #eink-panel input { width: 100%; margin-top: 4px; }';" +
+                    "document.head.appendChild(style);" +
+                    "var readerStyle = document.createElement('style');" +
+                    "document.head.appendChild(readerStyle);" +
+                    "function applySettings() {" +
+                    "  var fontSize = localStorage.getItem('eink_fs') || '22';" +
+                    "  var lineHeight = localStorage.getItem('eink_lh') || '1.6';" +
+                    "  var paraSpacing = localStorage.getItem('eink_ps') || '14';" +
+                    "  var padding = localStorage.getItem('eink_pd') || '16';" +
+                    "  readerStyle.innerHTML = 'article, p, .reader-content, body { font-size: ' + fontSize + 'px !important; line-height: ' + lineHeight + ' !important; padding-left: ' + padding + 'px !important; padding-right: ' + padding + 'px !important; } p { margin-bottom: ' + paraSpacing + 'px !important; }';" +
+                    "}" +
+                    "applySettings();" +
+                    "var fsVal = localStorage.getItem('eink_fs') || 22;" +
+                    "var lhVal = localStorage.getItem('eink_lh') || 1.6;" +
+                    "var psVal = localStorage.getItem('eink_ps') || 14;" +
+                    "var pdVal = localStorage.getItem('eink_pd') || 16;" +
+                    "var panel = document.createElement('div');" +
+                    "panel.id = 'eink-panel';" +
+                    "panel.innerHTML = '<div style=\"font-weight:bold;margin-bottom:8px;border-bottom:1px solid #000;padding-bottom:4px;\">墨案排版设置</div>' +" +
+                    "  '<label>字号大小 (px)</label><input type=\"range\" id=\"eink-fs\" min=\"14\" max=\"38\" value=\"' + fsVal + '\">' +" +
+                    "  '<label>行间距</label><input type=\"range\" id=\"eink-lh\" min=\"1.0\" max=\"2.5\" step=\"0.1\" value=\"' + lhVal + '\">' +" +
+                    "  '<label>段落间距 (px)</label><input type=\"range\" id=\"eink-ps\" min=\"0\" max=\"35\" value=\"' + psVal + '\">' +" +
+                    "  '<label>左右边距 (px)</label><input type=\"range\" id=\"eink-pd\" min=\"0\" max=\"40\" value=\"' + pdVal + '\">' +" +
+                    "  '<button id=\"eink-close\" style=\"margin-top:12px;width:100%;background:#000!important;color:#fff!important;padding:6px;\">确定并关闭</button>';" +
+                    "document.body.appendChild(panel);" +
+                    "var btn = document.createElement('button');" +
+                    "btn.id = 'eink-btn';" +
+                    "btn.innerText = '⚙ 排版';" +
+                    "btn.onclick = function() { panel.style.display = panel.style.display === 'block' ? 'none' : 'block'; };" +
+                    "document.body.appendChild(btn);" +
+                    "document.getElementById('eink-fs').oninput = function(e) { localStorage.setItem('eink_fs', e.target.value); applySettings(); };" +
+                    "document.getElementById('eink-lh').oninput = function(e) { localStorage.setItem('eink_lh', e.target.value); applySettings(); };" +
+                    "document.getElementById('eink-ps').oninput = function(e) { localStorage.setItem('eink_ps', e.target.value); applySettings(); };" +
+                    "document.getElementById('eink-pd').oninput = function(e) { localStorage.setItem('eink_pd', e.target.value); applySettings(); };" +
+                    "document.getElementById('eink-close').onclick = function() { panel.style.display = 'none'; };" +
+                    "var leftZone = document.createElement('div');" +
+                    "leftZone.className = 'eink-zone-left';" +
+                    "leftZone.onclick = function(e) { if (panel.style.display === 'block') return; window.scrollBy({ top: -window.innerHeight * 0.88, behavior: 'instant' }); };" +
+                    "var rightZone = document.createElement('div');" +
+                    "rightZone.className = 'eink-zone-right';" +
+                    "rightZone.onclick = function(e) { if (panel.style.display === 'block') return; window.scrollBy({ top: window.innerHeight * 0.88, behavior: 'instant' }); };" +
+                    "document.body.appendChild(leftZone);" +
+                    "document.body.appendChild(rightZone);" +
+                    "})();";
 
                 if (view != null) {
                     view.evaluateJavascript(js, null);
@@ -227,23 +227,15 @@ jobs:
                     super.onBackPressed();
                 }
             }
-        }'''
+        }
+        EOF
 
-        with open('app/src/main/java/com/eink/fanqiereader/MainActivity.java', 'w', encoding='utf-8') as f:
-            f.write(main_java)
-
-        print('Project files created cleanly.')
-        "
-
-    # 配置系统级 Gradle
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
 
-    # 执行构建
-    - name: Build APK with Gradle
+    - name: Build APK
       run: gradle assembleDebug
 
-    # 导出 APK 文件
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
