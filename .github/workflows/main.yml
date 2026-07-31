@@ -16,18 +16,24 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    # 1. 彻底清理旧残留文件
+    # 1. 彻底清理旧残留
     - name: Clean Workspace
       run: |
         rm -rf ./*
         rm -rf ./.gradle
 
-    # 2. 生成现代化 Android 项目结构 (AGP 8.2.0 标准)
+    # 2. 重新生成项目（补齐关键的 gradle.properties 文件）
     - name: Generate Clean Android Project
       run: |
         mkdir -p app/src/main/java/com/eink/fanqiereader
         mkdir -p app/src/main/res/layout
         mkdir -p app/src/main/res/values
+
+        # 补全 AndroidX 开启开关（解决本次报错的核心）
+        cat << 'EOF' > gradle.properties
+        android.useAndroidX=true
+        android.nonTransitiveRClass=true
+        EOF
 
         cat << 'EOF' > settings.gradle
         pluginManagement {
@@ -240,7 +246,7 @@ jobs:
         }
         EOF
 
-    # 3. 严格锁定使用 Gradle 8.4 版本（解决 Gradle 9.x 兼容性爆红问题）
+    # 3. 锁定 Gradle 8.4 环境
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
       with:
@@ -250,7 +256,7 @@ jobs:
     - name: Build APK
       run: gradle assembleDebug
 
-    # 5. 上传产物
+    # 5. 上传成品 APK
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
