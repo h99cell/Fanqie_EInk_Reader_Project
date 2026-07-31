@@ -22,7 +22,7 @@ jobs:
         rm -rf ./*
         rm -rf ./.gradle
 
-    # 2. 生成兼容 Android 14 (S23 Ultra) 的代码
+    # 2. 生成修复后的项目结构
     - name: Generate Clean Android Project
       run: |
         mkdir -p app/src/main/java/com/eink/fanqiereader
@@ -88,7 +88,6 @@ jobs:
         }
         EOF
 
-        # 生成图标
         cat << 'EOF' > app/src/main/res/drawable/ic_launcher.xml
         <vector xmlns:android="http://schemas.android.com/apk/res/android"
             android:width="108dp"
@@ -104,7 +103,6 @@ jobs:
         </vector>
         EOF
 
-        # 修复主题命名：定义单独的 AppTheme
         cat << 'EOF' > app/src/main/res/values/styles.xml
         <resources>
             <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
@@ -153,7 +151,7 @@ jobs:
         </FrameLayout>
         EOF
 
-        # 修复 MainActivity 逻辑与高版本系统兼容性
+        # 优化 JS 样式注入逻辑
         cat << 'EOF' > app/src/main/java/com/eink/fanqiereader/MainActivity.java
         package com.eink.fanqiereader;
 
@@ -174,7 +172,6 @@ jobs:
                 super.onCreate(savedInstanceState);
                 setContentView(R.layout.activity_main);
 
-                // 安全的全屏隐藏逻辑（适配 Android 14 / One UI 6）
                 View decorView = getWindow().getDecorView();
                 if (decorView != null) {
                     decorView.setSystemUiVisibility(
@@ -208,7 +205,14 @@ jobs:
                     "if (window.einkInjected) return;" +
                     "window.einkInjected = true;" +
                     "var style = document.createElement('style');" +
-                    "style.innerHTML = '* { background-color: #ffffff !important; color: #000000 !important; animation: none !important; transition: none !important; box-shadow: none !important; text-shadow: none !important; } .eink-zone-left { position: fixed; top: 0; left: 0; width: 30%; height: 100%; z-index: 9998; } .eink-zone-right { position: fixed; top: 0; right: 0; width: 30%; height: 100%; z-index: 9998; } #eink-btn { position: fixed; bottom: 15px; right: 15px; z-index: 10000; background: #000 !important; color: #fff !important; padding: 8px 14px; font-size: 14px; font-weight: bold; } #eink-panel { display: none; position: fixed; bottom: 60px; right: 15px; z-index: 10000; background: #fff !important; border: 2px solid #000; padding: 14px; width: 230px; font-size: 13px; } #eink-panel label { display: block; margin-top: 8px; font-weight: bold; } #eink-panel input { width: 100%; margin-top: 4px; }';" +
+                    "style.innerHTML = 'html, body { background-color: #ffffff !important; } " +
+                    "*, *::before, *::after { animation: none !important; transition: none !important; box-shadow: none !important; text-shadow: none !important; } " +
+                    ".eink-zone-left { position: fixed; top: 0; left: 0; width: 30%; height: 100%; z-index: 9998; } " +
+                    ".eink-zone-right { position: fixed; top: 0; right: 0; width: 30%; height: 100%; z-index: 9998; } " +
+                    "#eink-btn { position: fixed; bottom: 15px; right: 15px; z-index: 10000; background: #000 !important; color: #fff !important; padding: 8px 14px; font-size: 14px; font-weight: bold; border-radius: 4px; border: none; } " +
+                    "#eink-panel { display: none; position: fixed; bottom: 60px; right: 15px; z-index: 10000; background: #fff !important; border: 2px solid #000; padding: 14px; width: 230px; font-size: 13px; color: #000 !important; } " +
+                    "#eink-panel label { display: block; margin-top: 8px; font-weight: bold; color: #000 !important; } " +
+                    "#eink-panel input { width: 100%; margin-top: 4px; }';" +
                     "document.head.appendChild(style);" +
                     "var readerStyle = document.createElement('style');" +
                     "document.head.appendChild(readerStyle);" +
@@ -217,7 +221,7 @@ jobs:
                     "  var lineHeight = localStorage.getItem('eink_lh') || '1.6';" +
                     "  var paraSpacing = localStorage.getItem('eink_ps') || '14';" +
                     "  var padding = localStorage.getItem('eink_pd') || '16';" +
-                    "  readerStyle.innerHTML = 'article, p, .reader-content, body { font-size: ' + fontSize + 'px !important; line-height: ' + lineHeight + ' !important; padding-left: ' + padding + 'px !important; padding-right: ' + padding + 'px !important; } p { margin-bottom: ' + paraSpacing + 'px !important; }';" +
+                    "  readerStyle.innerHTML = 'article, .reader-content, .page-content { font-size: ' + fontSize + 'px !important; line-height: ' + lineHeight + ' !important; padding-left: ' + padding + 'px !important; padding-right: ' + padding + 'px !important; } article p, .reader-content p { margin-bottom: ' + paraSpacing + 'px !important; font-size: ' + fontSize + 'px !important; }';" +
                     "}" +
                     "applySettings();" +
                     "var fsVal = localStorage.getItem('eink_fs') || 22;" +
@@ -231,7 +235,7 @@ jobs:
                     "  '<label>行间距</label><input type=\"range\" id=\"eink-lh\" min=\"1.0\" max=\"2.5\" step=\"0.1\" value=\"' + lhVal + '\">' +" +
                     "  '<label>段落间距 (px)</label><input type=\"range\" id=\"eink-ps\" min=\"0\" max=\"35\" value=\"' + psVal + '\">' +" +
                     "  '<label>左右边距 (px)</label><input type=\"range\" id=\"eink-pd\" min=\"0\" max=\"40\" value=\"' + pdVal + '\">' +" +
-                    "  '<button id=\"eink-close\" style=\"margin-top:12px;width:100%;background:#000!important;color:#fff!important;padding:6px;\">确定并关闭</button>';" +
+                    "  '<button id=\"eink-close\" style=\"margin-top:12px;width:100%;background:#000!important;color:#fff!important;padding:6px;border:none;\">确定并关闭</button>';" +
                     "document.body.appendChild(panel);" +
                     "var btn = document.createElement('button');" +
                     "btn.id = 'eink-btn';" +
